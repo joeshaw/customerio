@@ -55,3 +55,19 @@ func TestAPI(t *testing.T) {
 		t.Fatalf("c.Track(testID, \"with-attrs\", map[string]interface{}{\"bar\": \"baz\", \"quux\": 3.14159}) failed: %s", err)
 	}
 }
+
+func TestNilClient(t *testing.T) {
+	var c *Client = nil
+
+	if err := c.Identify(testID, testEmail, nil); err != nil {
+		t.Fatalf("Error on nil client c.Identify: %s", err)
+	}
+
+	if err := c.Track(testID, "test-event", nil); err != nil {
+		t.Fatalf("Error on nil client c.Track: %s", err)
+	}
+
+	if err := c.Delete(testID); err != nil {
+		t.Fatalf("Error on nil client c.Delete: %s", err)
+	}
+}

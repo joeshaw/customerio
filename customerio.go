@@ -41,6 +41,10 @@ type Client struct {
 // documented here:
 // http://customer.io/docs/api/rest.html#section-Creating_or_updating_customers
 func (c *Client) Identify(id string, email string, attrs map[string]interface{}) error {
+	if c == nil {
+		return nil
+	}
+
 	if attrs == nil {
 		attrs = map[string]interface{}{}
 	}
@@ -76,6 +80,10 @@ func (c *Client) Identify(id string, email string, attrs map[string]interface{})
 // Customer.io.  The REST endpoint is documented here:
 // http://customer.io/docs/api/rest.html#section-Deleting_customers
 func (c *Client) Delete(id string) error {
+	if c == nil {
+		return nil
+	}
+
 	u := urlPrefix + fmt.Sprintf("/customers/%s", id)
 	req, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
@@ -102,6 +110,10 @@ func (c *Client) Delete(id string) error {
 // email.  The REST endpoint is documented here:
 // http://customer.io/docs/api/rest.html#section-Track_a_custom_event
 func (c *Client) Track(id string, eventName string, attrs map[string]interface{}) error {
+	if c == nil {
+		return nil
+	}
+
 	jsonMap := map[string]interface{}{
 		"name": eventName,
 	}
