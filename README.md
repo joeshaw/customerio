@@ -22,6 +22,8 @@ c := customerio.Client{
     HTTPClient: http.DefaultClient,
 }
 
+// Create a new customer with ID 5, email address customer@example.com,
+// and a couple custom attributes
 err := c.Identify("5", "customer@example.com", map[string]interface{}{
     "name": "Bob",
     "plan": "premium",
@@ -30,6 +32,8 @@ if err != nil {
     // uh oh
 }
 
+// Track an event named "purchased" on customer ID 5, with some custom
+// event attributes.
 err = c.Track("5", "purchased", map[string]interface{}{
     "price": 23.45,
 }
