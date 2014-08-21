@@ -5,6 +5,7 @@ package customerio
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -107,8 +108,12 @@ func (c *Client) Delete(id string) error {
 // Track will send an event to Customer.io.  The attrs map may be nil,
 // or contain any information to attach to this event.  These attributes
 // can be used in triggers to control who should receive triggered
-// email.  The REST endpoint is documented here:
+// email. If the id is the empty string the email is sent without association
+// to any customer and attrs["recipient"] must not be nil.
+// The REST endpoint is documented here:
 // http://customer.io/docs/api/rest.html#section-Track_a_custom_event
+// Sending non-customer emails is described here:
+// http://customer.io/docs/invitation-emails.html
 func (c *Client) Track(id string, eventName string, attrs map[string]interface{}) error {
 	if c == nil {
 		return nil
@@ -116,6 +121,10 @@ func (c *Client) Track(id string, eventName string, attrs map[string]interface{}
 
 	jsonMap := map[string]interface{}{
 		"name": eventName,
+	}
+
+	if id == "" && (attrs == nil || attrs["recipient"] == nil) {
+		return errors.New(`attrs["recipient"] required if no customer id`)
 	}
 
 	if attrs != nil {
@@ -127,7 +136,12 @@ func (c *Client) Track(id string, eventName string, attrs map[string]interface{}
 		return err
 	}
 
-	u := urlPrefix + fmt.Sprintf("/customers/%s/events", id)
+	urlPath := "/events"
+	if id != "" {
+		urlPath = fmt.Sprintf("/customers/%s/events", id)
+	}
+	u := urlPrefix + urlPath
+
 	req, err := http.NewRequest("POST", u, bytes.NewReader(data))
 	if err != nil {
 		return err
