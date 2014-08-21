@@ -54,6 +54,21 @@ func TestAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("c.Track(testID, \"with-attrs\", map[string]interface{}{\"bar\": \"baz\", \"quux\": 3.14159}) failed: %s", err)
 	}
+
+	err = c.Track("", "recipient-required-nil-attrs", nil)
+	if err == nil {
+		t.Fatalf("c.Track(\"\", \"recipient-required-nil-attrs\", nil) failed, expected error")
+	}
+
+	err = c.Track("", "recipient-required-empty-attrs", map[string]interface{}{})
+	if err == nil {
+		t.Fatalf("c.Track(\"\", \"recipient-required-empty-attrs\", map[string]interface{}) failed, expected error")
+	}
+
+	err = c.Track("", "no-customer-id", map[string]interface{}{"recipient": "test@example.com"})
+	if err != nil {
+		t.Fatalf("c.Track(\"\", \"no-customer-id\", map[string]interface{\"recipient\": \"test@example.com\"}) failed: %s", err)
+	}
 }
 
 func TestNilClient(t *testing.T) {
