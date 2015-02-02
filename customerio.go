@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -42,8 +43,8 @@ type Client struct {
 // documented here:
 // http://customer.io/docs/api/rest.html#section-Creating_or_updating_customers
 func (c *Client) Identify(id string, email string, attrs map[string]interface{}) error {
-	if c == nil {
-		return nil
+	if id == "" {
+		return errors.New("id is required")
 	}
 
 	if attrs == nil {
@@ -51,80 +52,61 @@ func (c *Client) Identify(id string, email string, attrs map[string]interface{})
 	}
 
 	attrs["email"] = email
+
 	data, err := json.Marshal(attrs)
 	if err != nil {
 		return err
 	}
 
-	u := urlPrefix + fmt.Sprintf("/customers/%s", id)
-	req, err := http.NewRequest("PUT", u, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
-	req.SetBasicAuth(c.SiteID, c.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return &Error{resp.StatusCode}
-	}
-
-	return nil
+	return c.do("PUT", "/customers/"+id, data)
 }
 
 // Delete will remove a customer, and all their information from
 // Customer.io.  The REST endpoint is documented here:
 // http://customer.io/docs/api/rest.html#section-Deleting_customers
 func (c *Client) Delete(id string) error {
-	if c == nil {
-		return nil
+	if id == "" {
+		return errors.New("id is required")
 	}
-
-	u := urlPrefix + fmt.Sprintf("/customers/%s", id)
-	req, err := http.NewRequest("DELETE", u, nil)
-	if err != nil {
-		return err
-	}
-
-	req.SetBasicAuth(c.SiteID, c.APIKey)
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return &Error{resp.StatusCode}
-	}
-
-	return nil
+	return c.do("DELETE", "/customers/"+id, nil)
 }
 
 // Track will send an event to Customer.io.  The attrs map may be nil,
 // or contain any information to attach to this event.  These attributes
 // can be used in triggers to control who should receive triggered
-// email. If the id is the empty string the email is sent without association
-// to any customer and attrs["recipient"] must not be nil.
-// The REST endpoint is documented here:
+// email.  The REST endpoint is documented here:
 // http://customer.io/docs/api/rest.html#section-Track_a_custom_event
-// Sending non-customer emails is described here:
-// http://customer.io/docs/invitation-emails.html
 func (c *Client) Track(id string, eventName string, attrs map[string]interface{}) error {
-	if c == nil {
-		return nil
+	if id == "" {
+		return errors.New("id is required")
 	}
 
+	path := fmt.Sprintf("/customers/%s/events", id)
+
+	return c.event(path, eventName, attrs)
+}
+
+// Sends an event email to a address that is not associated with a user in
+// Customer.io.  The attrs may be nil, and recipient will be assigned to
+// "recipient" within it.  The REST endpoint is documented here:
+// http://customer.io/docs/invitation-emails.html
+func (c *Client) TrackRecipient(recipient, eventName string, attrs map[string]interface{}) error {
+	if attrs == nil {
+		attrs = map[string]interface{}{}
+	}
+
+	if r, ok := attrs["recipient"]; ok && r != recipient {
+		return errors.New("recipient would be overwritten in attrs")
+	}
+
+	attrs["recipient"] = recipient
+
+	return c.event("/events", eventName, attrs)
+}
+
+func (c *Client) event(path, eventName string, attrs map[string]interface{}) error {
 	jsonMap := map[string]interface{}{
 		"name": eventName,
-	}
-
-	if id == "" && (attrs == nil || attrs["recipient"] == nil) {
-		return errors.New(`attrs["recipient"] required if no customer id`)
 	}
 
 	if attrs != nil {
@@ -136,19 +118,31 @@ func (c *Client) Track(id string, eventName string, attrs map[string]interface{}
 		return err
 	}
 
-	urlPath := "/events"
-	if id != "" {
-		urlPath = fmt.Sprintf("/customers/%s/events", id)
-	}
-	u := urlPrefix + urlPath
+	return c.do("POST", path, data)
+}
 
-	req, err := http.NewRequest("POST", u, bytes.NewReader(data))
+func (c *Client) do(method, path string, data []byte) error {
+	if c == nil {
+		return nil
+	}
+
+	u := urlPrefix + path
+
+	var reader io.Reader
+	if data != nil {
+		reader = bytes.NewReader(data)
+	}
+
+	req, err := http.NewRequest(method, u, reader)
 	if err != nil {
 		return err
 	}
 
 	req.SetBasicAuth(c.SiteID, c.APIKey)
-	req.Header.Set("Content-Type", "application/json")
+
+	if reader != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {

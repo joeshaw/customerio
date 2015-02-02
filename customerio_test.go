@@ -55,19 +55,14 @@ func TestAPI(t *testing.T) {
 		t.Fatalf("c.Track(testID, \"with-attrs\", map[string]interface{}{\"bar\": \"baz\", \"quux\": 3.14159}) failed: %s", err)
 	}
 
-	err = c.Track("", "recipient-required-nil-attrs", nil)
-	if err == nil {
-		t.Fatalf("c.Track(\"\", \"recipient-required-nil-attrs\", nil) failed, expected error")
-	}
-
-	err = c.Track("", "recipient-required-empty-attrs", map[string]interface{}{})
-	if err == nil {
-		t.Fatalf("c.Track(\"\", \"recipient-required-empty-attrs\", map[string]interface{}) failed, expected error")
-	}
-
-	err = c.Track("", "no-customer-id", map[string]interface{}{"recipient": "test@example.com"})
+	err = c.TrackRecipient(testEmail, "nil-attrs", nil)
 	if err != nil {
-		t.Fatalf("c.Track(\"\", \"no-customer-id\", map[string]interface{\"recipient\": \"test@example.com\"}) failed: %s", err)
+		t.Fatalf("c.TrackRecipient(testEmail, \"nil-attrs\", nil) failed: %s", err)
+	}
+
+	err = c.TrackRecipient(testEmail, "with-attrs", map[string]interface{}{"bar": "baz", "quux": 3.14159})
+	if err != nil {
+		t.Fatalf("c.TrackRecipient(testEmail, \"with-attrs\", map[string]interface{}{\"bar\": \"baz\", \"quux\": 3.14159}) failed: %s", err)
 	}
 }
 
@@ -84,5 +79,39 @@ func TestNilClient(t *testing.T) {
 
 	if err := c.Delete(testID); err != nil {
 		t.Fatalf("Error on nil client c.Delete: %s", err)
+	}
+
+	if err := c.TrackRecipient(testEmail, "test-event", nil); err != nil {
+		t.Fatalf("Error on nil client c.TrackRecipient: %s", err)
+	}
+}
+
+func TestInvalidAPIArgs(t *testing.T) {
+	c := Client{
+		SiteID:     siteID,
+		APIKey:     apiKey,
+		HTTPClient: http.DefaultClient,
+	}
+
+	idRequired := "id is required"
+
+	err := c.Identify("", testEmail, nil)
+	if err == nil || err.Error() != idRequired {
+		t.Fatalf("c.Identify expected error '%s'", idRequired)
+	}
+
+	err = c.Delete("")
+	if err == nil || err.Error() != idRequired {
+		t.Fatalf("c.Delete expected error '%s'", idRequired)
+	}
+
+	err = c.Track("", "test-event", nil)
+	if err == nil || err.Error() != idRequired {
+		t.Fatalf("c.Track expected error '%s'", idRequired)
+	}
+
+	err = c.TrackRecipient(testEmail, "test-event", map[string]interface{}{"recipient": "x" + testEmail})
+	if err == nil || err.Error() != "recipient would be overwritten in attrs" {
+		t.Fatalf("c.TrackRecipient expected error 'recipient would be overwritten in attrs'")
 	}
 }
