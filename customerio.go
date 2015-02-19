@@ -148,6 +148,7 @@ func (c *Client) do(method, path string, data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return &Error{resp.StatusCode}
