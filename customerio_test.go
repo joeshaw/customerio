@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 	"testing"
+
+	"golang.org/x/net/context"
 )
 
 var siteID, apiKey string
@@ -113,5 +115,27 @@ func TestInvalidAPIArgs(t *testing.T) {
 	err = c.TrackRecipient(testEmail, "test-event", map[string]interface{}{"recipient": "x" + testEmail})
 	if err == nil || err.Error() != "recipient would be overwritten in attrs" {
 		t.Fatalf("c.TrackRecipient expected error 'recipient would be overwritten in attrs'")
+	}
+}
+
+func TestContext(t *testing.T) {
+	c := &Client{
+		SiteID:     siteID,
+		APIKey:     apiKey,
+		HTTPClient: http.DefaultClient,
+	}
+
+	ctx := WithContext(context.Background(), c)
+	c2, ok := FromContext(ctx)
+	if !ok {
+		t.Fatal("Expected to get client from context")
+	}
+
+	if c2 != c {
+		t.Fatal("Client received from context isn't what we expected")
+	}
+
+	if c, ok = FromContext(context.Background()); ok {
+		t.Fatal("Unexpectedly got a client from background context")
 	}
 }

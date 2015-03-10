@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"golang.org/x/net/context"
 )
 
 var urlPrefix = "https://track.customer.io/api/v1"
@@ -155,4 +157,19 @@ func (c *Client) do(method, path string, data []byte) error {
 	}
 
 	return nil
+}
+
+type contextKey struct{}
+
+// WithContext creates a new context.Context with the Client associated
+func WithContext(ctx context.Context, c *Client) context.Context {
+	return context.WithValue(ctx, contextKey{}, c)
+}
+
+// FromContext returns the Client associated with a context.Context,
+// if any.  If one isn't associated, the Client is nil and the ok bool
+// is false.
+func FromContext(ctx context.Context) (c *Client, ok bool) {
+	c, ok = ctx.Value(contextKey{}).(*Client)
+	return c, ok
 }
