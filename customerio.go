@@ -166,10 +166,9 @@ func WithContext(ctx context.Context, c *Client) context.Context {
 	return context.WithValue(ctx, contextKey{}, c)
 }
 
-// FromContext returns the Client associated with a context.Context,
-// if any.  If one isn't associated, the Client is nil and the ok bool
-// is false.
-func FromContext(ctx context.Context) (c *Client, ok bool) {
-	c, ok = ctx.Value(contextKey{}).(*Client)
-	return c, ok
+// FromContext returns the *Client associated with a context.Context,
+// if any.  Otherwise a nil *Client is returned.
+func FromContext(ctx context.Context) *Client {
+	c, _ := ctx.Value(contextKey{}).(*Client)
+	return c
 }

@@ -126,8 +126,8 @@ func TestContext(t *testing.T) {
 	}
 
 	ctx := WithContext(context.Background(), c)
-	c2, ok := FromContext(ctx)
-	if !ok {
+	c2 := FromContext(ctx)
+	if c2 == nil {
 		t.Fatal("Expected to get client from context")
 	}
 
@@ -135,7 +135,7 @@ func TestContext(t *testing.T) {
 		t.Fatal("Client received from context isn't what we expected")
 	}
 
-	if c, ok = FromContext(context.Background()); ok {
+	if c := FromContext(context.Background()); c != nil {
 		t.Fatal("Unexpectedly got a client from background context")
 	}
 }
