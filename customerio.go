@@ -161,8 +161,8 @@ func (c *Client) do(method, path string, data []byte) error {
 
 type contextKey struct{}
 
-// WithContext creates a new context.Context with the Client associated
-func WithContext(ctx context.Context, c *Client) context.Context {
+// NewContext creates a new context.Context with the Client associated
+func NewContext(ctx context.Context, c *Client) context.Context {
 	return context.WithValue(ctx, contextKey{}, c)
 }
 
