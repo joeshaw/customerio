@@ -53,7 +53,9 @@ func (c *Client) Identify(id string, email string, attrs map[string]interface{})
 		attrs = map[string]interface{}{}
 	}
 
-	attrs["email"] = email
+	if email != "" {
+		attrs["email"] = email
+	}
 
 	data, err := json.Marshal(attrs)
 	if err != nil {
